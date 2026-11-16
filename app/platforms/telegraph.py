@@ -1,10 +1,14 @@
-
+import asyncio
 import json
+import logging
 import re
 
 import httpx
 
 from app.config import settings
+from app.platforms.base import BasePlatform
+
+logger = logging.getLogger(__name__)
 
 
 def create_content_nodes(message: str) -> list:
@@ -32,11 +36,13 @@ def create_content_nodes(message: str) -> list:
     if start > 0:
         children.append(message[:start])
 
-    children.append({
-        "tag": "a",
-        "attrs": {"href": clean_url},
-        "children": [clean_url],
-    })
+    children.append(
+        {
+            "tag": "a",
+            "attrs": {"href": clean_url},
+            "children": [clean_url],
+        }
+    )
 
     if end < len(message):
         children.append(message[end:])
@@ -49,50 +55,87 @@ def create_content_nodes(message: str) -> list:
     ]
 
 
-async def post_to_telegraph(message: str) -> dict:
-    """Publish a message as a Telegraph page."""
+class TelegraphPlatform(BasePlatform):
+    """Publish messages as Telegraph pages."""
 
-    if not settings.telegraph_access_token:
-        raise ValueError(
-            "Telegraph access token is not configured."
-        )
+    platform_name = "telegraph"
 
-    content = create_content_nodes(message)
+    async def publish(self, message: str) -> dict:
+        """Create a public Telegraph page."""
 
-    payload = {
-        "access_token": settings.telegraph_access_token,
-        "title": "Automated Social Media Update",
-        "content": json.dumps(content),
-        "return_content": "false",
-    }
+        if not settings.telegraph_access_token:
+            raise ValueError("Telegraph access token is not configured.")
 
-    url = "https://api.telegra.ph/createPage"
+        content = create_content_nodes(message)
 
-    async with httpx.AsyncClient(
-        timeout=30.0,
-        trust_env=True,
-    ) as client:
-        response = await client.post(
-            url,
-            data=payload,
-        )
+        payload = {
+            "access_token": settings.telegraph_access_token,
+            "title": "Automated Social Media Update",
+            "content": json.dumps(content),
+            "return_content": "false",
+        }
 
-        response.raise_for_status()
-        result = response.json()
+        url = "https://api.telegra.ph/createPage"
 
-    if not result.get("ok"):
-        raise RuntimeError(
-            result.get(
-                "error",
-                "Telegraph publishing failed.",
+        try:
+            logger.info("Creating a Telegraph page.")
+
+            for attempt in range(3):
+                try:
+                    async with httpx.AsyncClient(
+                        timeout=30.0,
+                        trust_env=True,
+                    ) as client:
+                        response = await client.post(
+                            url,
+                            data=payload,
+                        )
+
+                    break
+
+                except httpx.ConnectError:
+                    if attempt == 2:
+                        raise
+
+                    logger.warning(
+                        "Telegraph connection failed. " "Retrying (%s/2).",
+                        attempt + 1,
+                    )
+
+                    await asyncio.sleep(attempt + 1)
+
+            response.raise_for_status()
+            result = response.json()
+
+            if not result.get("ok"):
+                raise RuntimeError(
+                    result.get(
+                        "error",
+                        "Telegraph publishing failed.",
+                    )
+                )
+
+            page = result["result"]
+            page_path = page["path"]
+
+            logger.info(
+                "Telegraph page created successfully. " "Page path: %s",
+                page_path,
             )
-        )
 
-    page = result["result"]
+            return {
+                "platform": self.platform_name,
+                "status": "success",
+                "page_path": page_path,
+                "posted_url": page["url"],
+                "public_access": True,
+            }
 
-    return {
-        "platform": "telegraph",
-        "status": "success",
-        "page_path": page["path"],
-        "posted_url": page["url"],
-    }
+        except (
+            httpx.HTTPError,
+            KeyError,
+            ValueError,
+            RuntimeError,
+        ):
+            logger.exception("Telegraph publishing failed.")
+            raise

@@ -1,4 +1,3 @@
-
 import logging
 import re
 
@@ -6,7 +5,6 @@ from google import genai
 from google.genai import types
 
 from app.config import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +14,7 @@ def extract_urls(message: str) -> list[str]:
 
     urls = re.findall(r"https?://[^\s<>]+", message)
 
-    return [
-        url.rstrip(".,!?;:)")
-        for url in urls
-    ]
+    return [url.rstrip(".,!?;:)") for url in urls]
 
 
 async def improve_message(message: str) -> str:
@@ -32,9 +27,7 @@ async def improve_message(message: str) -> str:
     """
 
     if not settings.gemini_api_key:
-        raise ValueError(
-            "GEMINI_API_KEY is not configured."
-        )
+        raise ValueError("GEMINI_API_KEY is not configured.")
 
     original_urls = extract_urls(message)
 
@@ -59,9 +52,7 @@ Original message:
 """
 
     try:
-        async with genai.Client(
-            api_key=settings.gemini_api_key
-        ).aio as client:
+        async with genai.Client(api_key=settings.gemini_api_key).aio as client:
             response = await client.models.generate_content(
                 model=settings.gemini_model,
                 contents=prompt,
@@ -81,15 +72,12 @@ Original message:
             or improved_urls != original_urls
         ):
             logger.warning(
-                "Gemini returned an invalid message. "
-                "Using the original message."
+                "Gemini returned an invalid message. " "Using the original message."
             )
             return message
 
         return improved_message
 
     except Exception:
-        logger.exception(
-            "Gemini request failed. Using the original message."
-        )
+        logger.exception("Gemini request failed. Using the original message.")
         return message

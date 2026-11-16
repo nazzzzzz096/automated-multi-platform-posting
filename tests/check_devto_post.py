@@ -1,11 +1,10 @@
-
 import asyncio
 
-from app.platforms.telegraph import post_to_telegraph
+from app.platforms.devto import post_to_devto
 
 
 async def main():
-    """Test publishing a Telegraph page."""
+    """Test creating a DEV.to draft article."""
 
     message = (
         "Hello! This is a test from my Python "
@@ -13,9 +12,9 @@ async def main():
         "https://example.com"
     )
 
-    result = await post_to_telegraph(message)
+    result = await post_to_devto(message)
 
-    print("Telegraph publishing result:")
+    print("DEV.to publishing result:")
     print(result)
 
 

@@ -1,4 +1,3 @@
-
 import asyncio
 
 import httpx
@@ -13,17 +12,11 @@ async def main():
         print("Mastodon access token is missing.")
         return
 
-    instance_url = (
-        settings.mastodon_instance_url.rstrip("/")
-    )
+    instance_url = settings.mastodon_instance_url.rstrip("/")
 
     url = f"{instance_url}/api/v1/accounts/verify_credentials"
 
-    headers = {
-        "Authorization": (
-            f"Bearer {settings.mastodon_access_token}"
-        )
-    }
+    headers = {"Authorization": (f"Bearer {settings.mastodon_access_token}")}
 
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(

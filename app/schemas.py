@@ -1,4 +1,3 @@
-
 import re
 
 from pydantic import (
@@ -28,9 +27,7 @@ class PostingRequest(BaseModel):
         urls = [url.rstrip(".,!?;:)") for url in urls]
 
         if len(urls) != 1:
-            raise ValueError(
-                "Message must contain exactly one URL."
-            )
+            raise ValueError("Message must contain exactly one URL.")
 
         try:
             TypeAdapter(HttpUrl).validate_python(urls[0])

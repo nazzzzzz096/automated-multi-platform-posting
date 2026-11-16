@@ -1,4 +1,3 @@
-
 import asyncio
 
 from app.platforms.mastodon import post_to_mastodon

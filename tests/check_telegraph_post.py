@@ -1,11 +1,10 @@
-
 import asyncio
 
-from app.platforms.telegram import post_to_telegram
+from app.platforms.telegraph import TelegraphPlatform
 
 
 async def main():
-    """Test publishing a message to Telegram."""
+    """Test publishing a Telegraph page."""
 
     message = (
         "Hello! This is a test from my Python "
@@ -13,9 +12,10 @@ async def main():
         "https://example.com"
     )
 
-    result = await post_to_telegram(message)
+    platform = TelegraphPlatform()
+    result = await platform.publish(message)
 
-    print("Telegram publishing result:")
+    print("Telegraph publishing result:")
     print(result)
 
 
