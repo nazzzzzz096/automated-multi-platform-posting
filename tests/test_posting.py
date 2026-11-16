@@ -2,17 +2,35 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
-
+import app.main as main_module
 
 client = TestClient(app)
 
 
-def test_valid_message():
+def test_valid_message(monkeypatch):
+    async def mock_improve_message(message):
+        return message.replace(
+            "Grow your business!",
+            "Grow your business.",
+        )
+
+    monkeypatch.setattr(
+        main_module,
+        "improve_message",
+        mock_improve_message,
+    )
+
     response = client.post(
         "/posting",
         json={
             "message": "Grow your business! https://example.com"
         },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert response.json()["publishing_status"] == (
+        "Not published yet"
     )
 
     assert response.status_code == 200

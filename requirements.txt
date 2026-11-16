@@ -7,3 +7,4 @@ python-dotenv
 pytest
 ruff
 black
+google-genai<3.0.0
