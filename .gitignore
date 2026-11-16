@@ -5,6 +5,13 @@ __pycache__/
 
 # C extensions
 *.so
+venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+.ruff_cache/
+.vscode/
 
 # Distribution / packaging
 .Python
